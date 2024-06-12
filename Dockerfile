@@ -2,7 +2,7 @@ FROM node:latest AS build-js
 
 RUN npm install gulp gulp-cli -g
 
-RUN git clone https://github.com/stevesec/stealth-gophish /build
+RUN git clone https://github.com/kgretzky/gophish /build
 WORKDIR /build
 RUN npm install --only=dev
 RUN gulp
@@ -10,17 +10,17 @@ RUN gulp
 # Build Golang binary
 FROM golang:1.15.2 AS build-golang
 
-RUN git clone https://github.com/stevesec/stealth-gophish /go/src/github.com/stevesec/stealth-gophish 
+RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
 
-WORKDIR /go/src/github.com/stevesec/stealth-gophish
+WORKDIR /go/src/github.com/kgretzky/gophish
 
 RUN go get -v && go build -v
 
 # Runtime container
 FROM debian:stable-slim
 
-ENV GITHUB_USER="stevesec"
-ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/stealth-gophish"
+ENV GITHUB_USER="kgretzky"
+ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
 ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
 
 ARG BUILD_RFC3339="1970-01-01T00:00:00Z"
