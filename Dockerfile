@@ -13,6 +13,7 @@ FROM golang:1.15.2 AS build-golang
 RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
 
 WORKDIR /go/src/github.com/kgretzky/gophish
+COPY --from=build-js /build/ ./
 
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog.go
@@ -30,7 +31,7 @@ RUN sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "keyna
 
 COPY ./files/phish.go ./controllers/phish.go
 
-RUN go get -v && go build -v
+RUN go build -v
 
 # Runtime container
 FROM debian:stable-slim
