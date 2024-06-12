@@ -8,7 +8,7 @@ RUN npm install --only=dev
 RUN gulp
 
 # Build Golang binary
-FROM golang:1.15.2 AS build-golang
+FROM golang:latest AS build-golang
 
 RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
 
@@ -31,7 +31,7 @@ RUN sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "keyna
 
 COPY ./files/phish.go ./controllers/phish.go
 
-RUN go build -v
+RUN go get -v && go build -v
 
 # Runtime container
 FROM debian:stable-slim
@@ -67,7 +67,6 @@ RUN setcap 'cap_net_bind_service=+ep' /opt/gophish/gophish
 USER app
 RUN sed -i 's/127.0.0.1/0.0.0.0/g' config.json
 RUN touch config.json.tmp
-
 
 EXPOSE 3333 8080 8443 80
 
