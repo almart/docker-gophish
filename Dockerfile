@@ -29,7 +29,7 @@ RUN sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/' config/
 # Changing rid value
 RUN sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "keyname"/g' models/campaign.go
 
-COPY ./files/phish.go ./controllers/phish.go
+# COPY ./files/phish.go ./controllers/phish.go
 
 RUN go get -v && go build -v
 
