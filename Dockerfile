@@ -19,6 +19,21 @@ RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog_test.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request.go
+RUN set -ex \
+    && sed -i 's/SignatureHeader = "X-Gophish-Signature"/SignatureHeader = "X-Report-Signature"/g' webhook/webhook.go \
+    && sed -i 's/"github.com\/gophish\/gophish\/config"/\/\/"github.com\/gophish\/gophish\/config"/g' models/maillog.go \
+    && sed -i 's/msg.SetHeader("X-Mailer", config.ServerName)/\/\/msg.SetHeader("X-Mailer", config.ServerName)/g' models/maillog.go \
+    && sed -i 's/"X-Gophish-Contact": "",/\/\/"X-Gophish-Contact": "",/g' models/maillog_test.go \
+    && sed -i 's/Header{Key: "X-Gophish-Contact", Value: ""},/\/\/Header{Key: "X-Gophish-Contact", Value: ""},/g' models/maillog_test.go \
+    && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/maillog_test.go \
+    && sed -i 's/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/\/\/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/g' models/email_request.go \
+    && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/email_request_test.go \
+    && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go \
+    && sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "'"${RECIPIENT_PARAMETER}"'"/g' models/campaign.go \
+    && sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' models/template_context.go \
+    && sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
+    && sed -i 's/ 7/ 40/g' models/result.go \
+
 
 # Stripping X-Gophish-Signature
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
