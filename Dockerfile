@@ -32,7 +32,7 @@ RUN set -ex \
     && sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "'"${RECIPIENT_PARAMETER}"'"/g' models/campaign.go \
     && sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' models/template_context.go \
     && sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
-    && sed -i 's/ 7/ 40/g' models/result.go \
+    && sed -i 's/ 7/ 40/g' models/result.go 
 
 
 # Stripping X-Gophish-Signature
