@@ -69,10 +69,10 @@ RUN apt-get update && \
 
 WORKDIR /opt/gophish
 
-COPY --from=build-golang /go/src/github.com/gophish/gophish ./
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish ./
 COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
 COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
-COPY --from=build-golang /go/src/github.com/gophish/gophish/config.json ./
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish/config.json ./
 
 COPY ./docker-entrypoint.sh /opt/gophish
 RUN chmod +x /opt/gophish/docker-entrypoint.sh
