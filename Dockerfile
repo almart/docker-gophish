@@ -2,7 +2,7 @@ FROM node:latest AS build-js
 
 RUN npm install gulp gulp-cli -g
 
-RUN git clone https://github.com/kgretzky/gophish /build
+RUN git clone https://github.com/gophish/gophish /build
 WORKDIR /build
 RUN npm install --only=dev
 RUN gulp
@@ -10,9 +10,9 @@ RUN gulp
 # Build Golang binary
 FROM golang:latest AS build-golang
 
-RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
+RUN git clone https://github.com/gophish/gophish /go/src/github.com/gophish/gophish 
 
-WORKDIR /go/src/github.com/kgretzky/gophish
+WORKDIR /go/src/github.com/gophish/gophish
 COPY --from=build-js /build/ ./
 
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
@@ -52,7 +52,7 @@ RUN go get -v && go build -v
 # Runtime container
 FROM debian:stable-slim
 
-ENV GITHUB_USER="kgretzky"
+ENV GITHUB_USER="gophish"
 ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
 ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
 
@@ -69,10 +69,10 @@ RUN apt-get update && \
 
 WORKDIR /opt/gophish
 
-COPY --from=build-golang /go/src/github.com/kgretzky/gophish ./
+COPY --from=build-golang /go/src/github.com/gophish/gophish ./
 COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
 COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
-COPY --from=build-golang /go/src/github.com/kgretzky/gophish/config.json ./
+COPY --from=build-golang /go/src/github.com/gophish/gophish/config.json ./
 
 COPY ./docker-entrypoint.sh /opt/gophish
 RUN chmod +x /opt/gophish/docker-entrypoint.sh
