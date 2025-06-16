@@ -1,8 +1,8 @@
-FROM node:latest AS build-js
+FROM node:latest AS build-jsMore actions
 
 RUN npm install gulp gulp-cli -g
 
-RUN git clone https://github.com/gophish/gophish /build
+RUN git clone https://github.com/kgretzky/gophish /build
 WORKDIR /build
 RUN npm install --only=dev
 RUN gulp
@@ -10,9 +10,9 @@ RUN gulp
 # Build Golang binary
 FROM golang:latest AS build-golang
 
-RUN git clone https://github.com/gophish/gophish /go/src/github.com/gophish/gophish 
+RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
 
-WORKDIR /go/src/github.com/gophish/gophish
+WORKDIR /go/src/github.com/kgretzky/gophish
 COPY --from=build-js /build/ ./
 
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
@@ -29,7 +29,7 @@ RUN set -ex \
     && sed -i 's/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/\/\/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/g' models/email_request.go \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/email_request_test.go \
     && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go 
-    
+
     #&& sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "'"${RECIPIENT_PARAMETER}"'"/g' models/campaign.go \
     #&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' models/template_context.go \
     #&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
@@ -52,7 +52,7 @@ RUN go get -v && go build -v
 # Runtime container
 FROM debian:stable-slim
 
-ENV GITHUB_USER="gophish"
+ENV GITHUB_USER="kgretzky"
 ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
 ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
 
@@ -69,10 +69,10 @@ RUN apt-get update && \
 
 WORKDIR /opt/gophish
 
-COPY --from=build-golang /go/src/github.com/gophish/gophish ./
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish ./
 COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
 COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
-COPY --from=build-golang /go/src/github.com/gophish/gophish/config.json ./
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish/config.json ./
 
 COPY ./docker-entrypoint.sh /opt/gophish
 RUN chmod +x /opt/gophish/docker-entrypoint.sh
@@ -96,7 +96,7 @@ ARG VCS_REF
 ARG VERSION
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
-  org.label-schema.name="Gophish Docker" \
+  org.label-schema.name="Gophish Docker" \More actions
   org.label-schema.description="Gophish Docker Build" \
   org.label-schema.url="https://github.com/almart/docker-gophish" \
   org.label-schema.vcs-ref=$VCS_REF \
