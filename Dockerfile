@@ -1,4 +1,4 @@
-FROM node:latest AS build-jsMore actions
+FROM node:latest AS build-js
 
 RUN npm install gulp gulp-cli -g
 
@@ -30,10 +30,10 @@ RUN set -ex \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/email_request_test.go \
     && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go 
 
-    #&& sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "'"${RECIPIENT_PARAMETER}"'"/g' models/campaign.go \
-    #&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' models/template_context.go \
-    #&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
-    #&& sed -i 's/ 7/ 40/g' models/result.go 
+#&& sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "'"${RECIPIENT_PARAMETER}"'"/g' models/campaign.go \
+#&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' models/template_context.go \
+#&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
+#&& sed -i 's/ 7/ 40/g' models/result.go 
 
 
 # Stripping X-Gophish-Signature
@@ -96,11 +96,11 @@ ARG VCS_REF
 ARG VERSION
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
-  org.label-schema.name="Gophish Docker" \More actions
-  org.label-schema.description="Gophish Docker Build" \
-  org.label-schema.url="https://github.com/almart/docker-gophish" \
-  org.label-schema.vcs-ref=$VCS_REF \
-  org.label-schema.vcs-url="https://github.com/almart/docker-gophish" \
-  org.label-schema.vendor="almart" \
-  org.label-schema.version=$VERSION \
-  org.label-schema.schema-version="1.0"
+      org.label-schema.name="Gophish Docker" \
+      org.label-schema.description="Gophish Docker Build" \
+      org.label-schema.url="https://github.com/almart/docker-gophish" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/almart/docker-gophish" \
+      org.label-schema.vendor="almart" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
