@@ -37,10 +37,8 @@ RUN set -ex \
 #&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
 #&& sed -i 's/ 7/ 40/g' models/result.go 
 
-RUN grep -q 'h := "mailgun.local"' models/maillog.go || (
-    sed -i 's/h, err := os\.Hostname().*/h := "mailgun.local"\n    var err error/' models/maillog.go && \
+RUN sed -i 's/h, err := os\\.Hostname().*/h := \"mailgun.local\"\\n    var err error/' models/maillog.go && \
     sed -i '/if err != nil {/{N;N;d;}' models/maillog.go
-)
 
 
 # Stripping X-Gophish-Signature
