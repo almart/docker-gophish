@@ -55,14 +55,16 @@ RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
 # COPY ./files/phish.go ./controllers/phish.go
 
-RUN go get -v && go build -v
+# Build with Go modules (no GOPATH/go get)
+RUN go mod download && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o /go/bin/gophish .
 
 # Runtime container
 FROM debian:stable-slim
 
-ENV GITHUB_USER="kgretzky"
-ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
-ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
+# (GOPATH-based envs removed — not needed with modules)
+# ENV GITHUB_USER="kgretzky"
+# ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
+# ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
 
 ARG BUILD_RFC3339="1970-01-01T00:00:00Z"
 ARG COMMIT="local"
@@ -71,13 +73,16 @@ ARG VERSION="v0.0.1"
 RUN useradd -m -d /opt/gophish -s /bin/bash app
 
 RUN apt-get update && \
-	apt-get install --no-install-recommends -y jq libcap2-bin && \
-	apt-get clean && \
-	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get install --no-install-recommends -y jq libcap2-bin && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 WORKDIR /opt/gophish
 
-COPY --from=build-golang /go/src/github.com/kgretzky/gophish ./
+# Copy the built binary from the build stage (module-friendly output path)
+COPY --from=build-golang /go/bin/gophish /opt/gophish/gophish
+
+# Keep your static assets and config copies as-is (adjust paths if your build stage changed)
 COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
 COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
 COPY --from=build-golang /go/src/github.com/kgretzky/gophish/config.json ./
@@ -112,3 +117,4 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vendor="almart" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
+
