@@ -15,6 +15,8 @@ RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/go
 WORKDIR /go/src/github.com/kgretzky/gophish
 COPY --from=build-js /build/ ./
 
+# Changing servername
+RUN sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/' config/config.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog_test.go
@@ -39,8 +41,7 @@ RUN set -ex \
 # Stripping X-Gophish-Signature
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
-# Changing servername
-RUN sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/' config/config.go
+
 
 # Changing rid value
 #RUN sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "keyname"/g' models/campaign.go
