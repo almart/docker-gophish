@@ -10,6 +10,10 @@ RUN gulp
 # Build Golang binary
 FROM golang:latest AS build-golang
 
+RUN apt-get update && \
+  apt-get install --no-install-recommends -y build-essential ca-certificates && \
+  rm -rf /var/lib/apt/lists/*
+
 RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
 
 WORKDIR /go/src/github.com/kgretzky/gophish
@@ -40,7 +44,8 @@ RUN set -ex \
 # Patch only inside generateMessageID(), and only if not already patched
 RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
   sed -i '/func (m \*MailLog) generateMessageID/,/return msgid, nil/ s/h, \?err \?:= \?os\.Hostname()$/h := "mailgun"/' models/maillog.go && \
-  sed -i '/func (m \*MailLog) generateMessageID/,/return msgid, nil/ {/if err != nil {/,+2d}' models/maillog.go \
+  # Remove only the hostname-related error handling block to avoid using prior err
+  sed -i '/If we can.t get the hostname, we.ll use localhost/{N;N;N;d}' models/maillog.go \
 )
 
 
@@ -56,7 +61,11 @@ RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 # COPY ./files/phish.go ./controllers/phish.go
 
 # Build with Go modules (no GOPATH/go get)
-RUN go mod download && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o /go/bin/gophish .
+RUN set -eux; \
+    if [ -f go.mod ]; then \
+      go mod download; \
+    fi; \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -o /go/bin/gophish .
 
 # Runtime container
 FROM debian:stable-slim
