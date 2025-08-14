@@ -37,8 +37,12 @@ RUN set -ex \
 #&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
 #&& sed -i 's/ 7/ 40/g' models/result.go 
 
-RUN sed -i 's/h, err := os\\.Hostname().*/h := \"mailgun.local\"\\n    var err error/' models/maillog.go && \
-    sed -i '/if err != nil {/{N;N;d;}' models/maillog.go
+# Patch only inside generateMessageID(), and only if not already patched
+RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
+  sed -i '/func (m \*MailLog) generateMessageID/,/return msgid, nil/ s/h, \?err \?:= \?os\.Hostname()$/h := "mailgun"/' models/maillog.go && \
+  sed -i '/func (m \*MailLog) generateMessageID/,/return msgid, nil/ {/if err != nil {/,+2d}' models/maillog.go \
+)
+
 
 
 # Stripping X-Gophish-Signature
