@@ -48,7 +48,7 @@ RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
 # --- IMPORTANT: ensure VERSION exists for both build and runtime ---
-ARG VERSION="v0.0.1"
+ARG VERSION="v0.12.2"
 RUN printf "%s\n" "$VERSION" > VERSION
 
 # Build with Go modules
@@ -61,7 +61,7 @@ FROM debian:stable-slim
 
 ARG BUILD_RFC3339="1970-01-01T00:00:00Z"
 ARG VCS_REF="local"
-ARG VERSION="v0.0.1"
+ARG VERSION="v0.12.2"
 
 RUN useradd -m -d /opt/gophish -s /bin/bash app
 
@@ -109,5 +109,5 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url="https://github.com/almart/docker-gophish" \
       org.label-schema.vendor="almart" \
-      org.label-schema.version=$VERSION \
+      org.label-schema.version="v0.12.2" \
       org.label-schema.schema-version="1.0"
