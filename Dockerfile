@@ -48,7 +48,7 @@ RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
 # --- IMPORTANT: ensure VERSION exists for both build and runtime ---
-ARG VERSION="v0.12.2"
+ARG VERSION="v0.12.1"
 RUN printf "%s\n" "$VERSION" > VERSION
 
 # Build with Go modules
@@ -61,7 +61,7 @@ FROM debian:stable-slim
 
 ARG BUILD_RFC3339="1970-01-01T00:00:00Z"
 ARG VCS_REF="local"
-ARG VERSION="v0.12.2"
+ARG VERSION="v0.12.1"
 
 RUN useradd -m -d /opt/gophish -s /bin/bash app
 
