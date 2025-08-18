@@ -1,13 +1,14 @@
+# ---------- Stage 1: build JS assets ----------
 FROM node:latest AS build-js
 
-RUN npm install gulp gulp-cli -g
+RUN npm install -g gulp gulp-cli
 
 RUN git clone https://github.com/kgretzky/gophish /build
 WORKDIR /build
 RUN npm install --only=dev
-RUN gulp
+RUN gulp    # produces built assets under ./static
 
-# Build Golang binary
+# ---------- Stage 2: build Go binary ----------
 FROM golang:latest AS build-golang
 
 RUN apt-get update && \
@@ -15,11 +16,12 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish
-
 WORKDIR /go/src/github.com/kgretzky/gophish
-COPY --from=build-js /build/ ./
 
-# Changing servername
+# Bring over the freshly-built static assets from stage 1
+COPY --from=build-js /build/static ./static
+
+# === your code tweaks ===
 RUN sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/' config/config.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog.go
@@ -36,7 +38,7 @@ RUN set -ex \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/email_request_test.go \
     && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go
 
-# Patch only inside generateMessageID(), and only if not already patched
+# Patch only inside generateMessageID()
 RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
   sed -i '/func (m \*MailLog) generateMessageID/,/return msgid, nil/ s/h, \?err \?:= \?os\.Hostname()$/h := "mailgun"/' models/maillog.go && \
   sed -i '/If we can.t get the hostname, we.ll use localhost/{N;N;N;d}' models/maillog.go \
@@ -45,22 +47,20 @@ RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
 # Stripping X-Gophish-Signature
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
-# --- FIX: ensure VERSION exists for the build ---
+# --- IMPORTANT: ensure VERSION exists for both build and runtime ---
 ARG VERSION="v0.0.1"
 RUN printf "%s\n" "$VERSION" > VERSION
 
-# Build with Go modules (no GOPATH/go get)
+# Build with Go modules
 RUN set -eux; \
-    if [ -f go.mod ]; then \
-      go mod download; \
-    fi; \
+    if [ -f go.mod ]; then go mod download; fi; \
     CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -o /go/bin/gophish .
 
-# Runtime container
+# ---------- Stage 3: runtime ----------
 FROM debian:stable-slim
 
 ARG BUILD_RFC3339="1970-01-01T00:00:00Z"
-ARG COMMIT="local"
+ARG VCS_REF="local"
 ARG VERSION="v0.0.1"
 
 RUN useradd -m -d /opt/gophish -s /bin/bash app
@@ -72,31 +72,36 @@ RUN apt-get update && \
 
 WORKDIR /opt/gophish
 
-# Copy the built binary and assets
+# Binary
 COPY --from=build-golang /go/bin/gophish /opt/gophish/gophish
-COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
-COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
+
+# ---- Runtime assets Gophish expects on disk ----
+# VERSION file (fixes your "open ./VERSION" at runtime)
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish/VERSION ./VERSION
+# DB migrations and templates (Gophish reads these from disk)
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish/db ./db
+COPY --from=build-golang /go/src/github.com/kgretzky/gophish/templates ./templates
+# Full static dir built in stage 1 (includes js/css/images, etc.)
+COPY --from=build-js      /build/static ./static
+
+# Config & entrypoint
 COPY --from=build-golang /go/src/github.com/kgretzky/gophish/config.json ./
-
 COPY ./docker-entrypoint.sh /opt/gophish
-RUN chmod +x /opt/gophish/docker-entrypoint.sh
-RUN chown app. config.json docker-entrypoint.sh
+RUN chmod +x /opt/gophish/docker-entrypoint.sh && \
+    chown app. config.json docker-entrypoint.sh
 
+# allow binding low ports
 RUN setcap 'cap_net_bind_service=+ep' /opt/gophish/gophish
 
 USER app
-RUN sed -i 's/127.0.0.1/0.0.0.0/g' config.json
-RUN touch config.json.tmp
+RUN sed -i 's/127.0.0.1/0.0.0.0/g' config.json && touch config.json.tmp
 
 EXPOSE 3333 8080 8443 80
-
+STOPSIGNAL SIGKILL
 CMD ["/opt/gophish/docker-entrypoint.sh"]
 
-STOPSIGNAL SIGKILL
-
-# Build-time metadata as defined at http://label-schema.org
+# labels
 ARG BUILD_DATE
-ARG VCS_REF
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="Gophish Docker" \
       org.label-schema.description="Gophish Docker Build" \
