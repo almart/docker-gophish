@@ -14,7 +14,7 @@ RUN apt-get update && \
   apt-get install --no-install-recommends -y build-essential ca-certificates && \
   rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish 
+RUN git clone https://github.com/kgretzky/gophish /go/src/github.com/kgretzky/gophish
 
 WORKDIR /go/src/github.com/kgretzky/gophish
 COPY --from=build-js /build/ ./
@@ -34,31 +34,20 @@ RUN set -ex \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/maillog_test.go \
     && sed -i 's/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/\/\/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/g' models/email_request.go \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/email_request_test.go \
-    && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go 
-
-#&& sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "'"${RECIPIENT_PARAMETER}"'"/g' models/campaign.go \
-#&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' models/template_context.go \
-#&& sed -i 's/\/track/\/'"${TRACK_PARAMETER}"'/g' controllers/phish.go \
-#&& sed -i 's/ 7/ 40/g' models/result.go 
+    && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go
 
 # Patch only inside generateMessageID(), and only if not already patched
 RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
   sed -i '/func (m \*MailLog) generateMessageID/,/return msgid, nil/ s/h, \?err \?:= \?os\.Hostname()$/h := "mailgun"/' models/maillog.go && \
-  # Remove only the hostname-related error handling block to avoid using prior err
   sed -i '/If we can.t get the hostname, we.ll use localhost/{N;N;N;d}' models/maillog.go \
 )
-
-
 
 # Stripping X-Gophish-Signature
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
-
-
-# Changing rid value
-#RUN sed -i 's/const RecipientParameter = "rid"/const RecipientParameter = "keyname"/g' models/campaign.go
-
-# COPY ./files/phish.go ./controllers/phish.go
+# --- FIX: ensure VERSION exists for the build ---
+ARG VERSION="v0.0.1"
+RUN printf "%s\n" "$VERSION" > VERSION
 
 # Build with Go modules (no GOPATH/go get)
 RUN set -eux; \
@@ -69,11 +58,6 @@ RUN set -eux; \
 
 # Runtime container
 FROM debian:stable-slim
-
-# (GOPATH-based envs removed — not needed with modules)
-# ENV GITHUB_USER="kgretzky"
-# ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
-# ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
 
 ARG BUILD_RFC3339="1970-01-01T00:00:00Z"
 ARG COMMIT="local"
@@ -88,10 +72,8 @@ RUN apt-get update && \
 
 WORKDIR /opt/gophish
 
-# Copy the built binary from the build stage (module-friendly output path)
+# Copy the built binary and assets
 COPY --from=build-golang /go/bin/gophish /opt/gophish/gophish
-
-# Keep your static assets and config copies as-is (adjust paths if your build stage changed)
 COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
 COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
 COPY --from=build-golang /go/src/github.com/kgretzky/gophish/config.json ./
@@ -115,8 +97,6 @@ STOPSIGNAL SIGKILL
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION
-
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="Gophish Docker" \
       org.label-schema.description="Gophish Docker Build" \
@@ -126,4 +106,3 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vendor="almart" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
-
