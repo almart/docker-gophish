@@ -36,7 +36,7 @@ RUN set -ex \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/maillog_test.go \
     && sed -i 's/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/\/\/msg.SetHeader("X-Gophish-Contact", conf.ContactAddress)/g' models/email_request.go \
     && sed -i 's/"X-Gophish-Contact": s.config.ContactAddress,/\/\/"X-Gophish-Contact": s.config.ContactAddress,/g' models/email_request_test.go \
-    && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go
+    && sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/g' config/config.go \
     && sed -i 's/hostname, err := os.Hostname()/hostname := "mailgun"/' models/smtp.go
 
 # Patch only inside generateMessageID()
