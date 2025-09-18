@@ -21,7 +21,7 @@ WORKDIR /go/src/github.com/kgretzky/gophish
 # Bring over the freshly-built static assets from stage 1
 COPY --from=build-js /build/static ./static
 
-# === your code tweaks ===
+
 RUN sed -i 's/const ServerName = "gophish"/const ServerName = "IGNORE"/' config/config.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/email_request_test.go
 RUN sed -i 's/X-Gophish-Contact/X-Contact/g' models/maillog.go
