@@ -45,6 +45,13 @@ RUN grep -q 'h := "mailgun"' models/maillog.go || ( \
   sed -i '/If we can.t get the hostname, we.ll use localhost/{N;N;N;d}' models/maillog.go \
 )
 
+RUN sed -i -E \
+  -e '/^[[:space:]]*import[[:space:]]*\(/,/^[[:space:]]*\)/ { /^[[:space:]]*([_.[:alnum:]]+[[:space:]]+)?\"os\"[[:space:]]*$/d }' \
+  -e '/^[[:space:]]*import[[:space:]]+([_.[:alnum:]]+[[:space:]]+)?\"os\"[[:space:]]*$/d' \
+  -e '/^[[:space:]]*import[[:space:]]*\([[:space:]]*\)[[:space:]]*$/d' \
+  models/smtp.go
+
+
 # Stripping X-Gophish-Signature
 RUN sed -i 's/X-Gophish-Signature/X-Signature/g' webhook/webhook.go
 
